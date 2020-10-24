@@ -12,9 +12,9 @@ import java.util.List;
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
-    @Qualifier("springJdbcEmployeeDaoImpl")
+    @Qualifier("jpaDao")
     @Autowired
-    EmployeeDao employeeDao;
+    private EmployeeDao employeeDao;
 
     @Override
     public List<Employee> getAllEmployees() {

@@ -2,45 +2,51 @@ package com.bsuir.dao.impl.jdbc;
 
 import com.bsuir.dao.exception.EmployeeNotFoundException;
 import com.bsuir.dao.inter.EmployeeDao;
+import com.bsuir.dao.mapper.EmployeeMapper;
 import com.bsuir.model.Employee;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
-import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
 
 import static com.bsuir.dao.parameter.JdbcSqlStatement.*;
-import static com.bsuir.dao.parameter.ResultSetLabels.*;
+import static com.bsuir.dao.parameter.ResultSetLabels.ID_LABEL;
 
-@Repository
+@Repository("jdbcDao")
 public class SpringJdbcEmployeeDaoImpl implements EmployeeDao {
 
-    private final JdbcTemplate jdbcTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(SpringJdbcEmployeeDaoImpl.class);
 
+    private final EmployeeMapper employeeMapper = EmployeeMapper.getInstance();
+    
     @Autowired
-    public SpringJdbcEmployeeDaoImpl(DataSource dataSource) {
-        this.jdbcTemplate = new JdbcTemplate(dataSource);
-    }
+    private JdbcTemplate jdbcTemplate;
 
     @Override
     public Employee get(Long id) {
         try {
-            return jdbcTemplate.queryForObject(SQL_GET_EMPLOYEE, new Object[]{id}, new EmployeeMapper());
+            Employee employee = jdbcTemplate.queryForObject(SQL_GET_EMPLOYEE, new Object[]{id}, employeeMapper);
+            logger.info("Successfully get employee with id: " + id);
+            return employee;
         } catch (DataAccessException ex) {
+            logger.warn("Try to get not existing employee (id:" + id + ")");
             throw new EmployeeNotFoundException(id);
         }
     }
 
     @Override
     public List<Employee> getAll() {
-        return jdbcTemplate.query(SQL_GET_ALL_EMPLOYEES, new EmployeeMapper());
+        logger.info("Successfully get all employees");
+        return jdbcTemplate.query(SQL_GET_ALL_EMPLOYEES, employeeMapper);
     }
 
     @Override
@@ -56,6 +62,7 @@ public class SpringJdbcEmployeeDaoImpl implements EmployeeDao {
             ps.setDate(6, Date.valueOf(employee.getDateOfBirth()));
             return ps;
         }, keyHolder);
+        logger.info("Successfully create employee");
         employee.setId((Long) keyHolder.getKeyList().get(keyHolder.getKeyList().size() - 1).get(ID_LABEL));
         return employee;
     }
@@ -75,8 +82,10 @@ public class SpringJdbcEmployeeDaoImpl implements EmployeeDao {
             return ps;
         }, keyHolder);
         if (keyHolder.getKeyList().isEmpty()) {
+            logger.warn("Try to update not existing employee (id:" + employee.getId() + ")");
             throw new EmployeeNotFoundException(employee.getId());
         } else {
+            logger.info("Successfully update employee with id: " + employee.getId());
             return get((Long) keyHolder.getKeyList().get(keyHolder.getKeyList().size() - 1).get(ID_LABEL));
         }
     }
@@ -84,21 +93,6 @@ public class SpringJdbcEmployeeDaoImpl implements EmployeeDao {
     @Override
     public void delete(Long id) {
         jdbcTemplate.update(SQL_DELETE_EMPLOYEE, id);
-    }
-
-    private static class EmployeeMapper implements RowMapper<Employee> {
-
-        @Override
-        public Employee mapRow(ResultSet resultSet, int i) throws SQLException {
-            return new Employee(
-                    resultSet.getLong(ID_LABEL),
-                    resultSet.getString(FIRST_NAME_LABEL),
-                    resultSet.getString(LAST_NAME_LABEL),
-                    resultSet.getLong(DEPARTMENT_ID_LABEL),
-                    resultSet.getString(JOB_TITLE_LABEL),
-                    resultSet.getString(GENDER_LABEL),
-                    LocalDate.parse(resultSet.getDate(DATE_OF_BIRTH_LABEL).toString())
-            );
-        }
+        logger.info("Successfully delete employee with id: " + id);
     }
 }

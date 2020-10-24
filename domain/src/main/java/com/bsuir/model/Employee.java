@@ -1,24 +1,39 @@
 package com.bsuir.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import java.time.LocalDate;
 
+@Entity
+@Table("employee")
 public class Employee {
 
     @Id
+    @javax.persistence.Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    @Column
     private String firstName;
 
+    @Column
     private String lastName;
 
+    @Column
     private Long departmentId;
 
+    @Column
     private String jobTitle;
 
+    @Column
     private String gender;
 
+    @Column
     private LocalDate dateOfBirth;
 
     public Employee() {
